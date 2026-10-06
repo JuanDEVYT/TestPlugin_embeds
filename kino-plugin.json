@@ -1,13 +1,14 @@
 {
   "id": "bintv-prueba",
   "name": "BinTV prueba",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "apiVersion": 6,
   "entry": "plugin.js",
   "description": "Plugin de prueba: abre un reproductor incrustado y captura su stream con el navegador oculto.",
   "author": "JuanDEVYT",
   "browser": true,
   "streamHosts": "any",
+  "liveStreamHosts": "any",
   "hosts": ["bintv-sources.pages.dev", "grandemx.org"],
-  "capabilities": ["home", "resolve"]
+  "capabilities": ["home", "resolve", "channels"]
 }

@@ -1,37 +1,48 @@
-// Plugin de prueba para Kino: un solo enlace, resuelto con el navegador oculto.
-// IMPORTANTE: la forma exacta de las filas/items de home() es una suposición
-// (no pude leer /contract/). Corre `node sdk/validate.mjs .` y ajusta lo que
-// el validador diga que Kino descartaría.
+// Plugin de prueba para Kino: un solo canal en vivo, resuelto con el navegador oculto.
 
 const EMBED =
   "https://bintv-sources.pages.dev/?id=aHR0cHM6Ly9ncmFuZGVteC5vcmcvYmludHYvcDU1NjJid20tMzI4NQ";
 
-const CANAL = {
-  id: "bintv-1",
-  ref: "bintv-1",
-  title: "BinTV (prueba)",
-};
+const CANAL = { id: "bintv-1", title: "BinTV (prueba)", number: 1 };
 
+// Fila en Inicio (ítem kind: "live", apiVersion 6).
 export async function home() {
   return [
     {
-      title: "Prueba",
-      items: [CANAL],
+      id: "en-vivo",
+      title: "En vivo",
+      items: [{ id: CANAL.id, ref: CANAL.id, title: CANAL.title, kind: "live" }],
     },
   ];
 }
 
+// Pestaña En vivo (capacidad "channels", apiVersion 3).
+export async function liveCategories() {
+  return [{ id: "prueba", title: "Prueba" }];
+}
+
+export async function liveChannels({ categoryId }) {
+  if (categoryId !== "prueba") return { items: [] };
+  return {
+    items: [
+      {
+        id: CANAL.id,
+        title: CANAL.title,
+        number: CANAL.number,
+        categoryId: "prueba",
+        ref: CANAL.id,
+      },
+    ],
+  };
+}
+
+// Un solo canal: cualquier ref resuelve el mismo enlace.
 export async function resolve(ref) {
-  // Un solo canal: cualquier ref resuelve el mismo enlace.
   let page;
   try {
-    page = await kino.browser.capture(EMBED, {
-      timeoutMs: 22000,
-      // match por defecto: .m3u8, .mpd, .mp4, master.txt, videoplayback, /hls/
-    });
+    page = await kino.browser.capture(EMBED, { timeoutMs: 22000 });
   } catch (e) {
     if (e && e.code === "blocked") {
-      // La página pidió una persona (captcha) o no pasó la revisión.
       throw kino.error("unavailable", "blocked: el reproductor pide verificación");
     }
     if (e && e.code === "timeout") {
@@ -48,14 +59,9 @@ export async function resolve(ref) {
     throw kino.error("not_found", "la página no pidió ningún video");
   }
 
-  // Primero manifiestos (HLS/DASH), luego MP4: ya vienen ordenados.
-  const [first, ...rest] = media;
+  const [first] = media; // manifiestos (HLS/DASH) primero
   return {
     url: first.url,
-    headers: first.headers, // Referer, Origin, User-Agent, Cookie...: devolverlos tal cual
-    alternatives: rest.slice(0, 4).map((m) => ({
-      url: m.url,
-      headers: m.headers,
-    })),
+    headers: first.headers, // Referer, Origin, User-Agent, Cookie: tal cual
   };
 }
